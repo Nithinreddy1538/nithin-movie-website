@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title> Nithin Admin page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+.page {
+     display: none;
+}
+.active {
+    display: block;
+}
+.movie-card {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    transition: transform 0.3s ease;
+    height: 100%;
+    width: 250px;
+
+}
+
+
+.movie-card img {
+    width: 250px;
+    height: 350px;        /* FIXED HEIGHT */
+    object-fit: cover;   /* CROPS IMAGE PROPERLY */
+    object-position: top;
+}
+.movie-card:hover {
+    transform: translateY(-5px);
+}
+#myVideo {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  min-width: 100%;
+  min-height: 100%;
+  z-index: -1; /* Puts the video behind the content */
+  object-fit: cover; /* Ensures the video fills the screen without stretching */
+  filter: brightness(40%); /* Darkens the video so your text is easy to read */
+}
+
+/* Ensure the body is transparent so we can see the video */
+body {
+  background: transparent;
+}
+
+/* Optional: Make cards slightly glass-like to match the video feel */
+.movie-card {
+  background: rgba(255, 255, 255, 0.9); 
+  border: none;
+}
+
+        
+    </style>
+</head>
+<body class="bg-light">
+<video autoplay muted loop playsinline id="myVideo">
+  <source src="Flyng bird intro video template 2.mp4" type="video/mp4">
+ </video>
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="#" id="home-link">NithinMovies</a>
+        <button class="btn btn-outline-info" id="admin-btn">Admin Portal</button>
+    </div>
+</nav>
+
+<div class="container">
+
+    <!-- SEARCH PAGE -->
+    <div id="search-page" class="page active">
+        <div class="row mb-4">
+            <div class="col-md-8 mx-auto">
+                <input type="text" id="movie-search" class="form-control"
+                       placeholder="Search movies by title or keyword...">
+            </div>
+        </div>
+        <div id="movie-list" class="row g-0"></div>
+    </div>
+
+    <!-- LOGIN PAGE -->
+    <div id="login-page" class="page">
+        <div class="card mx-auto" style="max-width:400px;">
+            <div class="card-body">
+                <h3>Admin Login</h3>
+                <input type="password" id="admin-pass"
+                       class="form-control mb-3" placeholder="Password">
+                <button class="btn btn-primary w-100" id="login-submit">Login</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPLOAD PAGE -->
+    <div id="upload-page" class="page">
+        <div class="card p-4">
+            <h3>Upload / Edit Movie</h3>
+            <form id="movie-form">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Title</label>
+                        <input type="text" name="title" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Poster URL</label>
+                        <input type="url" name="poster" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Trailer URL</label>
+                        <input type="url" name="trailer" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Keywords</label>
+                        <input type="text" name="keywords" class="form-control">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">Save Movie</button>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+
+    let isAdmin = false;
+    let editIndex = null;
+
+    /* ===== LOAD MOVIES ===== */
+    let movies = JSON.parse(localStorage.getItem("movies"));
+
+    if (!movies || movies.length === 0) {
+        movies = [{
+            title: "Inception",
+            poster: "https://via.placeholder.com/300x450",
+            trailer: "#",
+            keywords: "dream sci-fi thriller"
+        }];
+        localStorage.setItem("movies", JSON.stringify(movies));
+    }
+
+    /* ===== PAGE NAVIGATION ===== */
+    function showPage(id) {
+        $('.page').removeClass('active');
+        $('#' + id).addClass('active');
+    }
+
+    $('#admin-btn').click(() => showPage('login-page'));
+    $('#home-link').click(() => showPage('search-page'));
+
+    /* ===== ADMIN LOGIN ===== */
+    $('#login-submit').click(function () {
+        const pass = $('#admin-pass').val().trim();
+
+        if (pass === "nit1538") {
+            isAdmin = true;
+            $('#admin-pass').val('');
+            showPage('upload-page');
+            renderMovies(movies);
+        } else {
+            alert("Wrong password!");
+        }
+    });
+
+    /* ===== ADD / EDIT MOVIE ===== */
+    $('#movie-form').on('submit', function (e) {
+        e.preventDefault();
+
+        const movie = {
+            title: $('input[name="title"]').val(),
+            poster: $('input[name="poster"]').val(),
+            trailer: $('input[name="trailer"]').val(),
+            keywords: $('input[name="keywords"]').val().toLowerCase()
+        };
+
+        if (editIndex !== null) {
+            movies[editIndex] = movie;
+            editIndex = null;
+        } else {
+            movies.push(movie);
+        }
+
+        localStorage.setItem("movies", JSON.stringify(movies));
+        renderMovies(movies);
+        this.reset();
+        showPage('search-page');
+        alert("Movie saved successfully!");
+    });
+
+    /* ===== RENDER MOVIES ===== */
+    function renderMovies(data) {
+        $('#movie-list').empty();
+
+        if (data.length === 0) {
+            $('#movie-list').html(`<p class="text-center text-muted">No movies found</p>`);
+            return;
+        }
+
+        data.forEach((movie, index) => {
+            $('#movie-list').append(`
+                <div class="col-md-3 mb-2">
+                    <div class="card movie-card h-100">
+                        <img src="${movie.poster}" class="card-img-top">
+                        <div class="card-body">
+                            <h5>${movie.title}</h5>
+                            <p class="small text-muted">${movie.keywords}</p>
+
+                            <a href="${movie.trailer}" target="_blank"
+                               class="btn btn-sm btn-danger mb-2">
+                               Watch Trailer
+                            </a>
+
+                            ${isAdmin ? `
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-warning btn-sm edit-btn"
+                                    data-index="${index}">Edit</button>
+                                <button class="btn btn-danger btn-sm delete-btn"
+                                    data-index="${index}">Delete</button>
+                            </div>` : ``}
+                        </div>
+                    </div>
+                </div>
+            `);
+        });
+    }
+
+    /* ===== SEARCH (WORKS FOR ADDED MOVIES) ===== */
+    $('#movie-search').on('keyup', function () {
+        const value = $(this).val().toLowerCase();
+
+        const filtered = movies.filter(movie =>
+            movie.title.toLowerCase().includes(value) ||
+            movie.keywords.includes(value)
+        );
+
+        renderMovies(filtered);
+    });
+
+    /* ===== DELETE ===== */
+    $(document).on('click', '.delete-btn', function () {
+        const index = $(this).data('index');
+        if (confirm("Delete this movie?")) {
+            movies.splice(index, 1);
+            localStorage.setItem("movies", JSON.stringify(movies));
+            renderMovies(movies);
+        }
+    });
+
+    /* ===== EDIT ===== */
+    $(document).on('click', '.edit-btn', function () {
+        const index = $(this).data('index');
+        const m = movies[index];
+
+        $('input[name="title"]').val(m.title);
+        $('input[name="poster"]').val(m.poster);
+        $('input[name="trailer"]').val(m.trailer);
+        $('input[name="keywords"]').val(m.keywords);
+
+        editIndex = index;
+        showPage('upload-page');
+    });
+
+    /* ===== INITIAL LOAD ===== */
+    renderMovies(movies);
+
+});
+</script>
+</body>
+</html>
