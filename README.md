@@ -11,8 +11,6 @@ The application uses **LocalStorage** to store movie data and works completely o
 
 👉 **Live Website:**  
 https://nithinreddy1538.github.io/nithin-movie-website/
-> 🔁 Replace `Nithinreddy1538` with your actual GitHub username.
-
 ---
 
 ## ✨ Features
